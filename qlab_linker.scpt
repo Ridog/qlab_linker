@@ -60,11 +60,20 @@ tell application id "com.figure53.QLab.4"
 						-- Find all matching files
 						set foundFiles to paragraphs of (do shell script "find " & escapedHAPPENINGS_DIRECTORY & " -type f -iname '*" & cueName & "*.qlab4' -print0 | xargs -0 ls -tp")
 						
+						-- Extract only the filenames from the found file paths
+						set fileNames to {}
+						repeat with filePath in foundFiles
+							set fileName to text -1 thru ((offset of "/" in ¬
+								(reverse of filePath)) - 1) of filePath
+							copy fileName to the end of fileNames
+						end repeat
+						
 						-- Prompt the user to select a file if there are multiple matches
 						if (count of foundFiles) > 1 then
-							set chosenFile to (choose from list foundFiles with title "Select a QLab project file for cue " & cueName & ":" with prompt "Multiple matching files found. Please select one:") as string
-							if chosenFile is not equal to false then
-								set newFilePath to chosenFile
+							set chosenFileName to (choose from list fileNames with title "Select a QLab project file for cue " & cueName & ":" with prompt "Multiple matching files found. Please select one:") as string
+							if chosenFileName is not equal to false then
+								set chosenFileIndex to index of chosenFileName in fileNames
+								set newFilePath to item chosenFileIndex of foundFiles
 							else
 								set missingFiles to missingFiles & cueName & return
 							end if
@@ -84,7 +93,7 @@ tell application id "com.figure53.QLab.4"
 								"  open \"" & newHFSPath & "\"" & return & ¬
 								"end tell"
 							set script source of sourceCue to scriptText
-							log "Set start cue " & cueName & " to directory " & newHFSPath
+							log "Set start cue " & cueName & " to file " & newHFSPath
 						end if
 					end if
 				end repeat

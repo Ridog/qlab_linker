@@ -57,13 +57,25 @@ tell application id "com.figure53.QLab.4"
 						
 						-- Get the most recently modified matching file path
 						set escapedHAPPENINGS_DIRECTORY to my replace_chars(HAPPENINGS_DIRECTORY, " ", "\\ ")
-						set newFilePath to do shell script "find " & escapedHAPPENINGS_DIRECTORY & " -type f -iname '*" & cueName & "*.qlab4' -print0 | xargs -0 ls -tp | head -n1"
+						-- Find all matching files
+						set foundFiles to paragraphs of (do shell script "find " & escapedHAPPENINGS_DIRECTORY & " -type f -iname '*" & cueName & "*.qlab4' -print0 | xargs -0 ls -tp")
+						
+						-- Prompt the user to select a file if there are multiple matches
+						if (count of foundFiles) > 1 then
+							set chosenFile to (choose from list foundFiles with title "Select a QLab project file for cue " & cueName & ":" with prompt "Multiple matching files found. Please select one:") as string
+							if chosenFile is not equal to false then
+								set newFilePath to chosenFile
+							else
+								set missingFiles to missingFiles & cueName & return
+							end if
+						else if (count of foundFiles) = 1 then
+							set newFilePath to item 1 of foundFiles
+						else
+							set missingFiles to missingFiles & cueName & return
+						end if
 						
 						-- If a matching file is found, update the script cue content
-						if newFilePath is "" then
-							-- Append missing file name to variable
-							set missingFiles to missingFiles & cueName & return
-						else
+						if newFilePath is not "" then
 							-- Convert the POSIX path to a HFS path
 							set newHFSPath to (POSIX file newFilePath) as alias
 							
